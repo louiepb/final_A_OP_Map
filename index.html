@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Final Project (Austin and Oak Park)</title>
+
+         <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+           integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+           crossorigin=""/>
+
+         <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+           integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+           crossorigin=""></script>
+		   
+		   
+<style type="text/css">
+    html,
+    body {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+    }
+
+    #map1 {
+        min-height: 100%;
+    }
+
+    #map-container1 {
+        position: relative;
+        height: 120vh;
+    }
+
+    .scrollable-map {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+    }
+
+    #map2 {
+        top: 100%; /* Position map2 below map1 */
+		margin-top: 50px; /* Adjust the margin as needed */
+    }
+
+    #map-container2 {
+        position: relative;
+        height: 120vh;
+    }
+	
+	
+          /* Optional: adjust the values below to change the appearance of the legend */
+          .legend {
+              padding: 6px 8px;
+              line-height: 18px;
+              background: rgba(255,255,255,0.9);
+              box-shadow: 0 0 15px rgba(0,0,0,0.2);
+              border-radius: 5px;
+          }
+
+           /* Optional: adjust the values below to change the appearance of the legend color boxes */
+           .legend i {
+              width: 18px;
+              height: 18px;
+              float: left;
+              margin-right: 8px;
+              opacity: 1;
+          }
+		  
+	
+    .title1 {
+        padding: 6px 8px;
+        font-family: Georgia, serif;
+		font-size: 16px;
+		letter-spacing: 1px;
+		word-spacing: 2px;
+		font-weight: 700;
+		text-decoration: none solid rgb(68, 68, 68);
+		font-style: normal;
+		font-variant: small-caps;
+		text-transform: none;
+        color: rgb(251, 253, 248);
+        background: #d95f0e;
+        box-shadow: 0 0 20px rgb(1, 1, 4);
+        border-radius: 5px;
+        text-align: center;
+    }
+
+    .title2 {
+        padding: 6px 8px;
+        font-family: Georgia, serif;
+		font-size: 16px;
+		letter-spacing: 1px;
+		word-spacing: 2px;
+		font-weight: 700;
+		text-decoration: none solid rgb(68, 68, 68);
+		font-style: normal;
+		font-variant: small-caps;
+		text-transform: none;
+        color: rgb(251, 253, 248);
+        background: #d95f0e;
+        box-shadow: 0 0 20px rgb(1, 1, 4);
+        border-radius: 5px;
+        text-align: center;
+    }
+</style>
+
+		 <script type="text/javascript" src="block_2020.js"></script>
+		 <script type="text/javascript" src="block_2010.js"></script>
+		 <script type="text/javascript" src="block_2000.js"></script>
+		 	
+		 <!-- Add script tags for tract boundaries data -->
+    <script type="text/javascript" src="tract_2020.js"></script>
+    <script type="text/javascript" src="tract_2010.js"></script>
+    <script type="text/javascript" src="tract_2000.js"></script>
+
+   </style>
+
+<div id="map-container">
+    <!-- Adjust the height value as needed -->
+    <div id="map1" style="height: 500px" class="scrollable-map"></div>
+    <div id="map2" style="height: 500px" class="scrollable-map"></div>
+</div>
+
+<script type="text/javascript">
+		
+// NOW ADDING FIRST A/OP Map
+
+          var map1 = L.map('map1', {
+              center: [41.8917916,-87.7912124],
+              zoom: 13
+          });
+		  
+        var Esri_WorldGrayCanvas1 = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
+            attribution: 'Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ',
+            maxZoom: 16
+        }).addTo(map1);
+			
+       // getColor function
+        function getColor1(value) {
+            return value > 80 ? '#a63603' :
+                value > 60 ? '#e6550d' :
+                    value > 40 ? '#fd8d3c' :
+                        value > 20 ? '#fdbe85' :
+                            '#feedde';
+        }
+
+        // Define a common style function
+        function commonStyle1(feature) {
+            var value = feature.properties.Perc_White; 
+            return {
+                fillColor: getColor1(value),
+                weight: 0,
+                opacity: 1,
+                color: 'gray',
+                fillOpacity: 0.9
+            };
+        }
+		
+		function highlightFeature(e) {
+    // Get access to the feature that was hovered through e.target
+    var feature = e.target;
+
+    // Set a thick grey border on the feature as mouseover effect
+    // Adjust the values below to change the highlighting styles of features on mouseover
+    // Check out https://leafletjs.com/reference-1.3.4.html#path for more options for changing style
+    feature.setStyle({
+        weight: 2,
+        color: 'black',
+        fillOpacity: 1
+    });
+
+    // Bring the highlighted feature to front so that the border doesn’t clash with nearby states
+    // But not for IE, Opera or Edge, since they have problems doing bringToFront on mouseover
+    if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
+        feature.bringToFront();
+    }
+}
+var geojson; // define a variable to make the geojson layer accessible for the funtion to use   
+            
+function resetHighlight(e) {
+    var layer = e.target;
+    layer.setStyle({
+        weight: 0,
+        color: 'gray',
+        fillOpacity: 0
+    });
+}
+function onEachFeature(feature, layer) {
+    layer.on({
+        mouseover: highlightFeature, // Do what defined by the highlightFeature function on mouseover
+        mouseout: resetHighlight,    // Do what defined by the resetHighlight function on mouseout
+    });
+}
+		
+        // Add the GeoJSON layers to map1
+          
+		     var tract2020_map1 = L.geoJSON(data1, {
+            style: {
+                color: 'black',
+                weight: .5,
+                fillOpacity: 0
+            }
+        });
+		    var tract2010_map1 = L.geoJSON(data3, {
+            style: {
+                color: 'black',
+                weight: .5,
+                fillOpacity: 0
+            }
+        });
+		var tract2000_map1 = L.geoJSON(data5, {
+            style: {
+                color: 'black',
+                weight: .5,
+                fillOpacity: 0
+            }
+        });
+
+		  var block2020_map1 = L.geoJSON(data, { style: commonStyle1, onEachFeature: onEachFeature }).bindPopup(function (layer) {
+        return layer.feature.properties.Perc_White + '<p style="color:purple">' + layer.feature.properties.Perc_White.toString() + ' % of Total Population </p>';
+    });
+		    
+		     
+    var block2010_map1 = L.geoJSON(data2, { style: commonStyle1, onEachFeature: onEachFeature }).bindPopup(function (layer) {
+        return layer.feature.properties.Perc_White + '<p style="color:purple">' + layer.feature.properties.Perc_White.toString() + ' % of Total Population </p>';
+    });
+		
+	
+    var block2000_map1 = L.geoJSON(data4, { style: commonStyle1, onEachFeature: onEachFeature }).bindPopup(function (layer) {
+        return layer.feature.properties.Perc_White + '<p style="color:purple">' + layer.feature.properties.Perc_White.toString() + ' % of Total Population </p>';
+    });
+	
+
+
+
+			tract2000_map1.addTo(map1);
+			 tract2010_map1.addTo(map1);
+			    tract2020_map1.addTo(map1);
+    block2000_map1.addTo(map1);
+			
+    block2010_map1.addTo(map1);
+		
+    block2020_map1.addTo(map1);
+		   
+	
+     
+        // Legend for map1
+              var legend_map1 = L.control({ position: 'bottomright' });
+        legend_map1.onAdd = function (map) {
+            var div = L.DomUtil.create('div', 'legend'),
+                grades = [0, 20, 40, 60, 80];
+
+            div.innerHTML = '<b> % White Population, by Block <br></b>';
+
+            for (var i = 0; i < grades.length; i++) {
+                div.innerHTML +=
+                    '<i style="background:' + getColor1(grades[i] + 1) + '"></i>' +
+                    grades[i] + (grades[i + 1] ? '&ndash;' + grades[i + 1] + '<br>' : '+');
+            }
+
+            return div;
+        };
+
+        legend_map1.addTo(map1);
+		
+		// Create Layer Groups for Tract Boundaries
+var tractBoundariesMap1 = {
+    "2020 Tract Boundaries": tract2020_map1,
+	"2010 Tract Boundaries": tract2010_map1,
+	"2000 Tract Boundaries": tract2000_map1
+
+};
+
+
+        var overlaymaps1 = {
+            "2020 Demographics": block2020_map1,
+            "2010 Demographics": block2010_map1,
+            "2000 Demographics": block2000_map1
+        };
+
+        L.control.layers(overlaymaps1, tractBoundariesMap1).addTo(map1);
+		map1.removeLayer(tract2020_map1);
+map1.removeLayer(tract2010_map1);
+map1.removeLayer(tract2000_map1);
+
+
+
+
+        // Removing/Adding the legend when the layer is removed/added
+        map1.on('overlayremove', function (eventLayer) {
+            if (eventLayer.name == '2020' || eventLayer.name == '2010' || eventLayer.name == '2000') {
+                map1.removeControl(legend_map1);
+            }
+        });
+
+        map1.on('overlayadd', function (eventLayer) {
+            if (eventLayer.name == '2020' || eventLayer.name == '2010' || eventLayer.name == '2000') {
+                legend_map1.addTo(map1);
+            }
+        });
+		
+// Title for map1
+var title1 = L.control({ position: 'topleft' });
+title1.onAdd = function (map) {
+    this._div = L.DomUtil.create('div', 'title1');
+    this._div.innerHTML = "<h3> Austin & Oak Park <br> White Population, by % <br> 2000,2010,2020 </h3>";
+    return this._div;
+};
+title1.addTo(map1);
+
+/////////////// NOW We add the second map! 
+        var map2 = L.map('map2', {
+            center: [41.8917916,-87.7912124],
+              zoom: 13
+        });
+
+        var Esri_WorldGrayCanvas2 = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
+            attribution: 'Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ',
+            maxZoom: 16
+        }).addTo(map2);
+
+        // getColor function
+        function getColor2(value) {
+            return value > 80 ? '#a63603' :
+                value > 60 ? '#e6550d' :
+                    value > 40 ? '#fd8d3c' :
+                        value > 20 ? '#fdbe85' :
+                            '#feedde';
+        }
+
+        // Define a common style function
+        function commonStyle2(feature) {
+            var value = feature.properties.Perc_Black;
+            return {
+                fillColor: getColor2(value),
+                weight: 0,
+                opacity: 1,
+                color: 'gray',
+                fillOpacity: 0.9
+            };
+        }
+
+        // Add the first GeoJSON layer to map2
+		
+			     var tract2020_map2 = L.geoJSON(data1, {
+            style: {
+                color: 'black',
+                weight: .5,
+                fillOpacity: 0
+            }
+        });
+		    var tract2010_map2 = L.geoJSON(data3, {
+            style: {
+                color: 'black',
+                weight: .5,
+                fillOpacity: 0
+            }
+        });
+		var tract2000_map2 = L.geoJSON(data5, {
+            style: {
+                color: 'black',
+                weight: .5,
+                fillOpacity: 0
+            }
+        });
+
+    var block2020_map2 = L.geoJSON(data, { style: commonStyle2, onEachFeature: onEachFeature }).bindPopup(function (layer) {
+        return layer.feature.properties.Perc_Black + '<p style="color:purple">' + layer.feature.properties.Perc_Black.toString() + ' % of Total Population </p>';
+    });
+
+    var block2010_map2 = L.geoJSON(data2, { style: commonStyle2, onEachFeature: onEachFeature }).bindPopup(function (layer) {
+        return layer.feature.properties.Perc_Black + '<p style="color:purple">' + layer.feature.properties.Perc_Black.toString() + ' % of Total Population </p>';
+    });
+
+    var block2000_map2 = L.geoJSON(data4, { style: commonStyle2, onEachFeature: onEachFeature }).bindPopup(function (layer) {
+        return layer.feature.properties.Perc_Black + '<p style="color:purple">' + layer.feature.properties.Perc_Black.toString() + ' % of Total Population </p>';
+    });
+
+			tract2000_map2.addTo(map2);
+			tract2010_map2.addTo(map2);
+			tract2020_map2.addTo(map2);
+    block2000_map2.addTo(map2); 
+    block2010_map2.addTo(map2);
+    block2020_map2.addTo(map2);
+		   
+
+
+        // Legend for map2
+        var legend_map2 = L.control({ position: 'bottomright' });
+        legend_map2.onAdd = function (map) {
+            var div = L.DomUtil.create('div', 'legend'),
+                grades = [0, 20, 40, 60, 80];
+
+            div.innerHTML = '<b> % Black Population, by Block <br></b>';
+
+            for (var i = 0; i < grades.length; i++) {
+                div.innerHTML +=
+                    '<i style="background:' + getColor2(grades[i] + 1) + '"></i>' +
+                    grades[i] + (grades[i + 1] ? '&ndash;' + grades[i + 1] + '<br>' : '+');
+            }
+
+            return div;
+        };
+
+        legend_map2.addTo(map2);
+		
+		var tractBoundariesMap2 = {
+    "2020 Tract Boundaries": tract2020_map2,
+	"2010 Tract Boundaries": tract2010_map2,
+	"2000 Tract Boundaries": tract2000_map2
+
+};
+
+        var overlaymaps2 = {
+            "2020 Demographics": block2020_map2,
+            "2010 Demographics": block2010_map2,
+            "2000 Demographics": block2000_map2
+        };
+
+        L.control.layers(overlaymaps2, tractBoundariesMap2).addTo(map2);
+		
+		map2.removeLayer(tract2020_map2);
+map2.removeLayer(tract2010_map2);
+map2.removeLayer(tract2000_map2);
+
+
+        // Removing/Adding the legend when the layer is removed/added
+        map2.on('overlayremove', function (eventLayer) {
+            if (eventLayer.name == '2020' || eventLayer.name == '2010' || eventLayer.name == '2000') {
+                map2.removeControl(legend_map2);
+            }
+        });
+
+        map2.on('overlayadd', function (eventLayer) {
+            if (eventLayer.name == '2020' || eventLayer.name == '2010' || eventLayer.name == '2000') {
+                legend_map2.addTo(map2);
+            }
+        });
+		
+// Title for map2
+var title2 = L.control({position: 'topleft'});
+title2.onAdd = function (map) {
+    this._div = L.DomUtil.create('div', 'title2');
+    this._div.innerHTML = "<h3> Austin & Oak Park <br> Black Population, by % <br> 2000,2010,2020 </h3>";
+    return this._div;
+};
+title2.addTo(map2);
+
+        </script>
+   </body>
+</html>
